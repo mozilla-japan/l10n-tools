@@ -1,0 +1,70 @@
+{
+  "channel": "nightly",
+  "path": {
+    "geckoL10n": "gecko-l10n",
+    "filter": "replace.json"
+  },
+  "repositories": {
+    "nightly": {
+      "mozillaCentral": "http://hg.mozilla.org/mozilla-central",
+      "commCentral": "http://hg.mozilla.org/comm-central"
+    },
+    "aurora": {
+      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-aurora",
+      "commCentral": "http://hg.mozilla.org/releases/comm-aurora"
+    },
+    "beta": {
+      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-beta",
+      "commCentral": "http://hg.mozilla.org/releases/comm-beta"
+    },
+    "release": {
+      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-release",
+      "commCentral": "http://hg.mozilla.org/releases/comm-release"
+    },
+    "extensions": {
+      "chatzilla": "http://hg.mozilla.org/chatzilla",
+      "inspector": "http://hg.mozilla.org/dom-inspector",
+      "venkman": "http://hg.mozilla.org/venkman"
+    },
+    "l10n": {
+      "gecko": "https://github.com/mozilla-japan/gecko-l10n",
+      "gaia": "https://github.com/mozilla-japan/gaia-l10n"
+    }
+  },
+  "directoryMap": {
+    "mozillaCentral": {
+      "browser/locales/en-US": "browser",
+      "browser/branding/official/locales/en-US": "browser/branding/official",
+      "dom/locales/en-US": "dom",
+      "extensions/spellcheck/locales/en-US": "extensions/spellcheck",
+      "mobile/locales/en-US": "mobile",
+      "mobile/android/base/locales/en-US": "mobile/android/base",
+      "mobile/android/locales/en-US": "mobile/android",
+      "mobile/xul/locales/en-US": "mobile/xul",
+      "netwerk/locales/en-US": "netwerk",
+      "security/manager/locales/en-US": "security/manager",
+      "services/sync/locales/en-US": "services/sync",
+      "toolkit/locales/en-US": "toolkit",
+      "webapprt/locales/en-US": "webapprt"
+    },
+    "commCentral": {
+      "chat/locales/en-US": "chat",
+      "calendar/locales/en-US": "calendar",
+      "editor/ui/locales/en-US": "editor/ui",
+      "mail/locales/en-US": "mail",
+      "other-licenses/branding/thunderbird/locales/en-US": "other-licenses/branding/thunderbird",
+      "suite/locales/en-US": "suite"
+    },
+    "extensions": {
+      "chatzilla": {
+        "locales/en-US": "extensions/irc"
+      },
+      "inspector": {
+        "resources/locale/en-US": "extensions/inspector/chrome"
+      },
+      "venkman": {
+        "locales/en-US": "extensions/venkman"
+      }
+    }
+  }
+}
