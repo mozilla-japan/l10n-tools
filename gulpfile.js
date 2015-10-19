@@ -226,6 +226,60 @@ gulp.task("compare", function() {
 });
 
 /**
+ * check generated ja/ja-JP-mac *.dtd files
+ * @param {string} channel - target channel (release|beta|aurora|nightly)
+ * @param {string} local   - target locale (ja|ja-JP-mac)
+ */
+gulp.task("errorcheck-dtd", function() {
+  const argv = minimist(process.argv.slice(2), {
+    string: ["channel", "locale"],
+    default: {
+      channel: config.channel,
+      locale: "ja",
+    }
+  });
+  // NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+  const XML_NAME_START_CHAR = ":A-Z_a-z\\xC0-\\xD6\\xD8-\\xF6\\xF8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
+  // NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+  const XML_NAME_CHAR = "-"+XML_NAME_START_CHAR+".0-9\\xB7\\u0300-\\u036F\\u203F-\\u2040";  
+  const XML_NAME = "["+XML_NAME_START_CHAR+"]["+XML_NAME_CHAR+"]+";
+  const DTD_ID = XML_NAME;
+  const DTD_VALUE_S = "[^'<]*(?:</?[a-z:A-Z.]+[^<>]*>[^'<]*)*";
+  const DTD_VALUE_D = '[^"<]*(?:</?[a-z:A-Z.]+[^<>]*>[^"<]*)*';
+  const DTD_COMMENT = "<!--[^-]*(?:-[^-]+)*?-->";
+  const DTD_ENTITY = "";
+  // license block
+  const DTD_HEADER = "^\\ufeff?(?:\\s*<!--.*LICENSE BLOCK[^-]*(?:-[^-]+)*-->\\s*)?";
+  //                                                     <-- $1 = pre space
+  // <!-- pre comment -->                                <-- $2 = pre comment
+  // <!ENTITY entitykey "entityvalue"> <!-- comment -->  <-- $3 = definition
+  // <--------------[3]--------------><------[6]------>      $6 = post comment
+  //          <--[4]--> <----[5]---->                        $4 = key, $5 = value 
+  const DTD_BLOCK = "^(\\s*)((?:"+DTD_COMMENT+"\\s*)*)"
+    + "(<!ENTITY\\s+(?:%\\s+)?("+DTD_ID+")\\s+(?:SYSTEM\\s+)?"
+    + "('"+DTD_VALUE_S+"'|\""+DTD_VALUE_D+"\")\\s*>)"
+    + "((?:\\s*%"+DTD_ID+";)?"
+    + "[ \\t]*(?:"+DTD_COMMENT+"[ \\t]*)*$\\n?)";
+  // any empty lines and comment blocks at the end of file
+  const DTD_FOOTER = "\\s*(?:"+DTD_COMMENT+"\\s*)*$";
+  
+  gulp.src(argv.channel+"/"+argv.locale+"/**/*.dtd")
+    .pipe(replace({
+      patterns: [
+        { match: new RegExp(DTD_HEADER), replacement: "" },
+        { match: new RegExp(DTD_FOOTER), replacement: "" }
+      ]
+    }))
+    .pipe(replace({
+      patterns: [ { match: new RegExp(DTD_BLOCK, "mg"), replacement: "" } ]
+    }))
+    .pipe(clipEmptyFiles())
+    .pipe(debug({title: "Syntax Error found in: "}))
+    .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
+    .pipe(concatFilenames(argv.channel+"/dtd-filelist"));
+});
+
+/**
  * check generated ja/ja-JP-mac *.properties files
  * @param {string} channel - target channel (release|beta|aurora|nightly)
  * @param {string} local   - target locale (ja|ja-JP-mac)
@@ -251,7 +305,7 @@ gulp.task("errorcheck-properties", function() {
     + "(?:\\s*"+PROPERTIES_COMMENT+"\\n)*";
   //                            <-- $1 = pre white space
   // # pre comment              <-- $2 = pre comment
-  // entitykey = entityvalue    <-- $3 = defitnition
+  // entitykey = entityvalue    <-- $3 = definition
   // <--$4--->   <---$5---->        $4 = key, $5 = value
   const PROPERTIES_BLOCK	= "^(\\s*)((?:"+PROPERTIES_COMMENT+"\\n(?:[ \\t]*\\n)*)*)([ \\t]*("+PROPERTIES_KEY+")[ \\t]*[:=][ \\t]*(?:("+PROPERTIES_VALUE+")[ \\t]*)?)$\\n?";
   const PROPERTIES_FOOTER = "\\n(?:[ \\t]*\\n)*"
@@ -295,7 +349,7 @@ gulp.task("errorcheck-inc", function() {
   const INC_HEADER = "^(?:[ \\t]*\\n)*(?:"+INC_COMMENT+"\\n)*";
   //                                  <-- $1 = pre white space
   // # pre comment                    <-- $2 = pre comment
-  // #define entitykey entityvalue    <-- $3 = defitnition
+  // #define entitykey entityvalue    <-- $3 = definition
   //         <--$4---> <---$5---->        $4 = key, $5 = value
   const INC_BLOCK = "^((?:[ \\t]*\\n)*)"
     + "((?:" + INC_COMMENT + "\\n(?:[ \\t]*\\n)*)*)"
@@ -340,7 +394,7 @@ gulp.task("errorcheck-ini", function() {
   const INI_HEADER = "^\\s*(" + INI_COMMENT + "\\n\\s*)*\\[[^\\]]+\\]\\n";
   //                          <-- $1 = pre white space
   // # pre comment            <-- $2 = pre comment
-  // entitykey=entityvalue    <-- $3 = defitnition
+  // entitykey=entityvalue    <-- $3 = definition
   // <--$4---> <---$5---->        $4 = key, $5 = value
   const INI_BLOCK = "^(\\s*)((?:^" + INI_COMMENT + "\\n(?:[ \\t]*\\n)*)*)("+INI_ENTITY+")$\\n?";
   const INI_FOOTER = "\\s+$";
@@ -359,6 +413,33 @@ gulp.task("errorcheck-ini", function() {
     .pipe(debug({title: "Syntax Error found in: "}))
     .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
     .pipe(concatFilenames(argv.channel+"/ini-filelist"));
+});
+
+/**
+ * run all error check tasks in parallel
+ */
+gulp.task("errorcheck", ["errorcheck-properties", "errorcheck-dtd", "errorcheck-inc", "errorcheck-ini"], function() { /* nothing */ });
+
+
+/**
+ * check place holders in ja/ja-JP-mac properties files
+ */
+gulp.task("placeholdercheck", function() {
+  console.log("not implemented yet");
+});
+
+/**
+ * check plural form usage in ja/ja-JP-mac properties files
+ */
+gulp.task("pluralcheck", function() {
+  console.log("not implemented yet");
+});
+
+/**
+ * check word/string usage in ja/ja-JP-mac files
+ */
+gulp.task("wordcheck", function() {
+  console.log("not implemented yet");
 });
 
 
