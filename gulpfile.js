@@ -226,7 +226,105 @@ gulp.task("compare", function() {
 });
 
 /**
+ * check generated ja/ja-JP-mac *.properties files
+ * @param {string} channel - target channel (release|beta|aurora|nightly)
+ * @param {string} local   - target locale (ja|ja-JP-mac)
+ */
+gulp.task("errorcheck-properties", function() {
+  const argv = minimist(process.argv.slice(2), {
+    string: ["channel", "locale"],
+    default: {
+      channel: config.channel,
+      locale: "ja",
+    }
+  });
+  const PROPERTIES_COMMENT = "[#!][^\\n]*";
+  //const PROPERTIES_KEY = "[^#!\\s][^:=\\s\\\\]*(?:\\\\.[^:=\\s\\\\]*)*";
+  // mozilla l10n local rule: use alphabet and some symbols only
+  const PROPERTIES_KEY = "[-0-9a-zA-Z_.?/^{@}]+";
+  const PROPERTIES_VALUE = "[^\\s][^\\n\\\\]*(?:\\\\(?:.|\\n)[^\\n\\\\]*)*(?=\\s|$)";
+  const PROPERTIES_ENTITY = PROPERTIES_COMMENT + "[ \\t]*[:=][^\\n\\\\]*(?:\\\\(?:.|\\n)[^\\n\\\\]*)*";
+  
+  // license block
+  const PROPERTIES_HEADER = "^(?:\\s*"+PROPERTIES_COMMENT+"\\n)*"
+    + "(?:\\s*"+PROPERTIES_COMMENT+"(?:LICENSE BLOCK|mozilla.org/MPL/)[^\\n]*\\n)"
+    + "(?:\\s*"+PROPERTIES_COMMENT+"\\n)*";
+  //                            <-- $1 = pre white space
+  // # pre comment              <-- $2 = pre comment
+  // entitykey = entityvalue    <-- $3 = defitnition
+  // <--$4--->   <---$5---->        $4 = key, $5 = value
+  const PROPERTIES_BLOCK	= "^(\\s*)((?:"+PROPERTIES_COMMENT+"\\n(?:[ \\t]*\\n)*)*)([ \\t]*("+PROPERTIES_KEY+")[ \\t]*[:=][ \\t]*(?:("+PROPERTIES_VALUE+")[ \\t]*)?)$\\n?";
+  const PROPERTIES_FOOTER = "\\n(?:[ \\t]*\\n)*"
+    + "(?:"+PROPERTIES_COMMENT+"\\n\\s*)*(?:"+PROPERTIES_COMMENT+")?$";
+  
+  gulp.src(argv.channel+"/"+argv.locale+"/**/*.properties")
+    .pipe(replace({
+      patterns: [{ match: /\r\n?/g, replacement: "\n" }]
+    }))
+    .pipe(replace({ // remove header first
+      patterns: [ { match: new RegExp(PROPERTIES_HEADER), replacement: "" } ]
+    }))
+    .pipe(replace({ // remove footer
+      patterns: [ { match: new RegExp(PROPERTIES_FOOTER), replacement: "" } ]
+    }))
+    .pipe(replace({ // check entities
+      patterns: [ { match: new RegExp(PROPERTIES_BLOCK, "mg"), replacement: "" } ]
+    }))
+    .pipe(clipEmptyFiles())
+    .pipe(debug({title: "Syntax Error found in: "}))
+    .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
+    .pipe(concatFilenames(argv.channel+"/properties-filelist"));
+});
+
+/**
+ * check generated ja/ja-JP-mac *.inc files
+ * @param {string} channel - target channel (release|beta|aurora|nightly)
+ * @param {string} local   - target locale (ja|ja-JP-mac)
+ */
+gulp.task("errorcheck-inc", function() {
+  const argv = minimist(process.argv.slice(2), {
+    string: ["channel", "locale"],
+    default: {
+      channel: config.channel,
+      locale: "ja",
+    }
+  });
+  const INC_COMMENT = "#(?!define[ \\t])[^\\n]*";
+  const INC_ENTITY = "#define[ \\t]+\\w+[ \\t]+[^\\n]*";
+  // empty lines and one continuous comment block (no blank lines between comment lines)
+  const INC_HEADER = "^(?:[ \\t]*\\n)*(?:"+INC_COMMENT+"\\n)*";
+  //                                  <-- $1 = pre white space
+  // # pre comment                    <-- $2 = pre comment
+  // #define entitykey entityvalue    <-- $3 = defitnition
+  //         <--$4---> <---$5---->        $4 = key, $5 = value
+  const INC_BLOCK = "^((?:[ \\t]*\\n)*)"
+    + "((?:" + INC_COMMENT + "\\n(?:[ \\t]*\\n)*)*)"
+    + "(#define[ \\t]+(\\w+)[ \\t]+([^\\n]*?))[ \\t]*$\\n?";
+  // any empty lines and comment blocks at the end of file
+  const INC_FOOTER = "\\n(?:[ \\t]*\\n)*"
+    + "(?:" + INC_COMMENT + "\\n(?:[ \\t]*\\n)*)*"
+    + INC_COMMENT + "(?:\\n(?:[ \\t]*\\n)*)?$";
+  
+  gulp.src(argv.channel+"/"+argv.locale+"/**/*.inc")
+    .pipe(replace({
+      patterns: [
+        { match: new RegExp(INC_HEADER), replacement: "" },
+        { match: new RegExp(INC_FOOTER), replacement: "" }
+      ]
+    }))
+    .pipe(replace({
+      patterns: [ { match: new RegExp(INC_BLOCK, "mg"), replacement: "" } ]
+    }))
+    .pipe(clipEmptyFiles())
+    .pipe(debug({title: "Syntax Error found in: "}))
+    .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
+    .pipe(concatFilenames(argv.channel+"/inc-filelist"));
+});
+
+/**
  * check generated ja/ja-JP-mac *.ini files
+ * @param {string} channel - target channel (release|beta|aurora|nightly)
+ * @param {string} local   - target locale (ja|ja-JP-mac)
  */
 gulp.task("errorcheck-ini", function() {
   const argv = minimist(process.argv.slice(2), {
@@ -244,21 +342,23 @@ gulp.task("errorcheck-ini", function() {
   // # pre comment            <-- $2 = pre comment
   // entitykey=entityvalue    <-- $3 = defitnition
   // <--$4---> <---$5---->        $4 = key, $5 = value
-  const INI_BLOCK = "^(\\s*)((?:^" + INI_COMMENT + "\\n(?:[ \\t\\f]*\\n)*)*)("+INI_ENTITY+")$\\n?"
+  const INI_BLOCK = "^(\\s*)((?:^" + INI_COMMENT + "\\n(?:[ \\t]*\\n)*)*)("+INI_ENTITY+")$\\n?";
   const INI_FOOTER = "\\s+$";
   
   gulp.src(argv.channel+"/"+argv.locale+"/**/*.ini")
     .pipe(replace({
       patterns: [
-        { match: new RegExp(INI_HEADER), replacement: ""},
-        { match: new RegExp(INI_BLOCK, "mg"), replacement: ""},
-        { match: new RegExp(INI_FOOTER), replacement: ""}
+        { match: new RegExp(INI_HEADER), replacement: "" },
+        { match: new RegExp(INI_FOOTER), replacement: "" }
       ]
+    }))
+    .pipe(replace({
+      patterns: [ { match: new RegExp(INI_BLOCK, "mg"), replacement: "" } ]
     }))
     .pipe(clipEmptyFiles())
     .pipe(debug({title: "Syntax Error found in: "}))
     .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
-    .pipe(concatFilenames(argv.channel+"errorfilelist"));
+    .pipe(concatFilenames(argv.channel+"/ini-filelist"));
 });
 
 
