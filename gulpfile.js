@@ -224,3 +224,52 @@ gulp.task("convert", ["clean-converted"], function() {
 gulp.task("compare", function() {
   console.log("not implemented yet");
 });
+
+/**
+ * check generated ja/ja-JP-mac *.ini files
+ */
+gulp.task("errorcheck-ini", function() {
+  const argv = minimist(process.argv.slice(2), {
+    string: ["channel", "locale"],
+    default: {
+      channel: config.channel,
+      locale: "ja",
+    }
+  });
+  const INI_COMMENT = "[;#][^\\n]*";
+  const INI_ENTITY = "([^=\\n]+)=([^\\n]*)";
+  // white spaces, comments and [Strings] (this header is not optional)
+  const INI_HEADER = "^\\s*(" + INI_COMMENT + "\\n\\s*)*\\[[^\\]]+\\]\\n";
+  //                          <-- $1 = pre white space
+  // # pre comment            <-- $2 = pre comment
+  // entitykey=entityvalue    <-- $3 = defitnition
+  // <--$4---> <---$5---->        $4 = key, $5 = value
+  const INI_BLOCK = "^(\\s*)((?:^" + INI_COMMENT + "\\n(?:[ \\t\\f]*\\n)*)*)("+INI_ENTITY+")$\\n?"
+  const INI_FOOTER = "\\s+$";
+  
+  gulp.src(argv.channel+"/"+argv.locale+"/**/*.ini")
+    .pipe(replace({
+      patterns: [
+        { match: new RegExp(INI_HEADER), replacement: ""},
+        { match: new RegExp(INI_BLOCK, "mg"), replacement: ""},
+        { match: new RegExp(INI_FOOTER), replacement: ""}
+      ]
+    }))
+    .pipe(clipEmptyFiles())
+    .pipe(debug({title: "Syntax Error found in: "}))
+    .pipe(gulp.dest(argv.channel+"/.errorcheck-"+argv.locale))
+    .pipe(concatFilenames(argv.channel+"errorfilelist"));
+});
+
+
+gulp.task("test", function() {
+  console.log(status);
+
+  /*
+  var jsonUrl = "https://gist.githubusercontent.com/dynamis/1e6252ef7541ffbdb943/raw/41c5d92454dc89709d791ddfa773673eb97aface/languages.json";
+  request({url: jsonUrl, json: true}, function(error, res, json) {
+    if (error) throw error;
+    console.log(json);
+  });
+  */
+});
