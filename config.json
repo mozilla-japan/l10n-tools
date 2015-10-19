@@ -1,34 +1,39 @@
 {
   "channel": "nightly",
   "path": {
-    "geckoL10n": "gecko-l10n",
-    "filter": "replace.json"
+    "geckoL10n": {
+      "nightly": "nightly/gecko-l10n",
+      "aurora":  "aurora/gecko-l10n",
+      "beta":    "beta/gecko-l10n",
+      "release": "release/gecko-l10n"
+    }
   },
-  "repositories": {
-    "nightly": {
-      "mozillaCentral": "http://hg.mozilla.org/mozilla-central",
-      "commCentral": "http://hg.mozilla.org/comm-central"
+  "file": {
+    "filter": "./replace.json",
+    "statusInLocal": "./nightly/gecko-l10n/status.json",
+    "statusInGithub": "https://raw.githubusercontent.com/mozilla-japan/gecko-l10n/master/status.json"
+  },
+  "repository": {
+    "mozilla": {
+      "nightly": "http://hg.mozilla.org/mozilla-central",
+      "aurora":  "http://hg.mozilla.org/releases/mozilla-aurora",
+      "beta":    "http://hg.mozilla.org/releases/mozilla-beta",
+      "release": "http://hg.mozilla.org/releases/mozilla-release"
     },
-    "aurora": {
-      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-aurora",
-      "commCentral": "http://hg.mozilla.org/releases/comm-aurora"
-    },
-    "beta": {
-      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-beta",
-      "commCentral": "http://hg.mozilla.org/releases/comm-beta"
-    },
-    "release": {
-      "mozillaCentral": "http://hg.mozilla.org/releases/mozilla-release",
-      "commCentral": "http://hg.mozilla.org/releases/comm-release"
+    "comm": {
+      "nightly": "http://hg.mozilla.org/comm-central",
+      "aurora":  "http://hg.mozilla.org/releases/comm-aurora",
+      "beta":    "http://hg.mozilla.org/releases/comm-beta",
+      "release": "http://hg.mozilla.org/releases/comm-release"
     },
     "extensions": {
       "chatzilla": "http://hg.mozilla.org/chatzilla",
       "inspector": "http://hg.mozilla.org/dom-inspector",
-      "venkman": "http://hg.mozilla.org/venkman"
+      "venkman":   "http://hg.mozilla.org/venkman"
     },
     "l10n": {
       "gecko": "https://github.com/mozilla-japan/gecko-l10n",
-      "gaia": "https://github.com/mozilla-japan/gaia-l10n"
+      "gaia":  "https://github.com/mozilla-japan/gaia-l10n"
     }
   },
   "directoryMap": {
