@@ -227,6 +227,9 @@ gulp.task("compare", function() {
 
 /**
  * check generated ja/ja-JP-mac *.dtd files
+ * this is simplified syntax check with regexp match:
+ *   replace all valid header, footer and entity difinition part with ""
+ *   if something left in the file, it contains some syntax error
  * @param {string} channel - target channel (release|beta|aurora|nightly)
  * @param {string} local   - target locale (ja|ja-JP-mac)
  */
@@ -265,12 +268,12 @@ gulp.task("errorcheck-dtd", function() {
   
   gulp.src(argv.channel+"/"+argv.locale+"/**/*.dtd")
     .pipe(replace({
-      patterns: [
+      patterns: [ // remove header and footer part
         { match: new RegExp(DTD_HEADER), replacement: "" },
         { match: new RegExp(DTD_FOOTER), replacement: "" }
       ]
     }))
-    .pipe(replace({
+    .pipe(replace({ // check entities
       patterns: [ { match: new RegExp(DTD_BLOCK, "mg"), replacement: "" } ]
     }))
     .pipe(clipEmptyFiles())
