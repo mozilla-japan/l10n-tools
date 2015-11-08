@@ -4,6 +4,9 @@
   "description": "Localization Tools (gulp version)",
   "main": "gulpfile.js",
   "dependencies": {
+    "babel-core": "^6.1.2",
+    "babel-preset-es2015": "^6.1.2",
+    "babel-preset-stage-3": "^6.1.2",
     "del": "^2.0.2",
     "gulp": "^3.9.0",
     "gulp-clip-empty-files": "^0.1.1",
